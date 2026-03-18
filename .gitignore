@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Vite build output
+dist/
+
+# Local backups
+data/*-backup-*.json
+fluent-war-room-20*.jsx
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
