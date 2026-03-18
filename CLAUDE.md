@@ -31,6 +31,38 @@ npm run dev   # opens at http://127.0.0.1:5174
 
 ---
 
+## GitHub — Pushing Updates
+
+**Repo:** `https://github.com/natalianakon/ZUMZ-Fluent-War-Room-Tracker`
+
+**Push changes (this machine — Keychain handles auth):**
+```bash
+cd "/Users/natalian/Desktop/ZUMIEZ/Natalia/Fluent War Room Board"
+git add .
+git commit -m "what you changed"
+git push
+```
+
+**Push on a new machine (token required first time):**
+```bash
+cd "/Users/natalian/Desktop/ZUMIEZ/Natalia/Fluent War Room Board"
+git add .
+git commit -m "what you changed"
+git push https://YOUR_TOKEN@github.com/natalianakon/ZUMZ-Fluent-War-Room-Tracker.git main
+```
+> Token expires Apr 17, 2026 — regenerate at GitHub → Settings → Developer Settings → Fine-grained tokens.
+
+**Clone fresh on a new machine:**
+```bash
+cd ~/Desktop
+git clone https://github.com/natalianakon/ZUMZ-Fluent-War-Room-Tracker.git
+cd ZUMZ-Fluent-War-Room-Tracker
+npm install
+npm run dev
+```
+
+---
+
 ## Files
 
 | File | Location | Description |
