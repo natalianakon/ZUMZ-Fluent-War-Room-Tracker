@@ -624,6 +624,10 @@ function BoardTab({ items, moves, project, onAddItem, onMoveItem, onEditItem, on
           "Test Store Deactivation w/Prod Volume Inventory",
           "Fluent Middleware Creds (US)",
           "US Final Validation Back to Aurus",
+          "Nyco Downstream Tax Approval (US)",
+          "Hand-Off and Approval from Graham (US)",
+          "Fenix Updates",
+          "Ensure placeholder ID is replaced with correct value & Tampermonkey so scanning works properly",
         ];
         const CA_EXCL_WORKSTREAMS = ["$ Reporting"]; // all financial reporting tickets
         const eodItems = caOnly
@@ -942,14 +946,14 @@ export default function App() {
           setActiveId(data[0].id);
         } else {
           // Seed default
-          const defaults = [{ id: "fluent-commerce", name: "Fluent Commerce", color: "#F05A22", launchCA: "2026-03-19", launchCAInStores: "2026-03-20", launchUS: "2026-03-23", launchUSInStores: "2026-03-24", workstreams: [...DEFAULT_WS] }];
+          const defaults = [{ id: "fluent-commerce", name: "Fluent Commerce", color: "#F05A22", launchCA: "2026-03-24", launchCAInStores: "2026-03-25", launchUS: "2026-03-30", launchUSInStores: "2026-03-31", workstreams: [...DEFAULT_WS] }];
           setProjects(defaults);
           setActiveId("fluent-commerce");
           fetch("/api/projects", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(defaults) }).catch(() => {});
         }
       })
       .catch(() => {
-        const defaults = [{ id: "fluent-commerce", name: "Fluent Commerce", color: "#F05A22", launchCA: "2026-03-19", launchCAInStores: "2026-03-20", launchUS: "2026-03-23", launchUSInStores: "2026-03-24", workstreams: [...DEFAULT_WS] }];
+        const defaults = [{ id: "fluent-commerce", name: "Fluent Commerce", color: "#F05A22", launchCA: "2026-03-24", launchCAInStores: "2026-03-25", launchUS: "2026-03-30", launchUSInStores: "2026-03-31", workstreams: [...DEFAULT_WS] }];
         setProjects(defaults);
         setActiveId("fluent-commerce");
       });
