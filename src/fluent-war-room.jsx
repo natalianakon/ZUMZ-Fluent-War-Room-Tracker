@@ -42,6 +42,7 @@ const WS_COLORS = {
   "$ Reporting": "#2471A3",
   "SSO":         "#C0397B",
   "Aurus":       "#D4AC0D",
+  "Backlog":     "#C0397B",
 };
 
 const STATUS_META = {
@@ -51,7 +52,24 @@ const STATUS_META = {
 };
 
 const ALL_STATUSES   = ["Outstanding", "In Progress", "Complete"];
-const DEFAULT_WS     = ["Tech Team", "$ Test", "$ Reporting", "SSO", "Aurus"];
+const DEFAULT_WS     = ["Tech Team", "$ Test", "$ Reporting", "Backlog"];
+
+// CA is live — grey out these CA-specific tickets on the board
+const CA_LIVE_ITEMS = new Set([
+  "Intra-Day CA",
+  "CA Final Validation Back to Aurus",
+  "Fluent Middleware Creds (CA)",
+  "Product Sync CA",
+  "Category Sync CA",
+  "Inventory LOH-CA",
+  "ATB Files CA",
+  "Valtech Creds for CA Product Sync",
+  "Confirmation + Hand-Off to Graham (CA)",
+  "Nyco Downstream Tax Approval (CA)",
+  "CA Apropos Test Loaded",
+  "All Order Scenarios Prepared (CA)",
+  "Data Exists and Added to Appropriate Integrations (CA)",
+]);
 
 const slug  = s => s.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 // Parse YYYY-MM-DD as local noon to avoid UTC midnight shifting to prior day
@@ -64,6 +82,7 @@ const fmtD = str => {
 const fmtT  = iso => new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 const today = () => new Date().toISOString().split("T")[0];
 const daysTo = dateStr => {
+  if (!dateStr) return null;
   const t = Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
   const d = new Date(dateStr + "T00:00:00Z").getTime();
   return Math.round((d - t) / 86400000);
@@ -167,18 +186,19 @@ function KpiTile({ label, value, sub, color = C.orange, icon }) {
 // ── LAUNCH CARD ───────────────────────────────────────────────────────────────
 function LaunchCard({ label, deployDate, inStoresDate, color }) {
   const days = daysTo(deployDate);
-  const isToday = days === 0;
-  const isPast  = days < 0;
+  const isTBD   = days === null;
+  const isToday = !isTBD && days === 0;
+  const isPast  = !isTBD && days < 0;
   const bg = isPast ? C.successFaint : isToday ? C.warningFaint : C.surface;
   const borderColor = isPast ? C.success : isToday ? C.warning : color;
   return (
     <div style={{ background: bg, border: `1px solid ${borderColor}55`, borderLeft: `4px solid ${borderColor}`, borderRadius: 10, padding: "16px 20px" }}>
       <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", color: borderColor, textTransform: "uppercase", marginBottom: 8 }}>{label}</div>
-      <div style={{ fontSize: 40, fontWeight: 800, color: borderColor, fontFamily: "'DM Mono', monospace", lineHeight: 1 }}>
-        {isPast ? "LIVE" : isToday ? "TODAY" : `${days}d`}
+      <div style={{ fontSize: 40, fontWeight: 800, color: isTBD ? C.textMuted : borderColor, fontFamily: "'DM Mono', monospace", lineHeight: 1 }}>
+        {isTBD ? "TBD" : isPast ? "LIVE" : isToday ? "TODAY" : `${days}d`}
       </div>
-      <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginTop: 8 }}>Deploy: {fmtD(deployDate)}</div>
-      <div style={{ fontSize: 11, color: C.textSub, marginTop: 3 }}>In stores: {fmtD(inStoresDate)}</div>
+      <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginTop: 8 }}>Deploy: {isTBD ? "TBD" : fmtD(deployDate)}</div>
+      <div style={{ fontSize: 11, color: C.textSub, marginTop: 3 }}>In stores: {isTBD ? "TBD" : fmtD(inStoresDate)}</div>
     </div>
   );
 }
@@ -215,13 +235,17 @@ function WSHealthRow({ ws, items }) {
 function StickyCard({ item, onMove, onEdit, onDelete }) {
   const [hovered, setHovered] = useState(false);
   const color = WS_COLORS[item.workstream] ?? C.orange;
+  const caLive = CA_LIVE_ITEMS.has(item.name);
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{ background: C.surfaceElev, borderRadius: 8, padding: "10px 12px", marginBottom: 6, borderTop: `1px solid ${C.border}`, borderRight: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, borderLeft: `3px solid ${color}`, position: "relative", boxShadow: hovered ? `0 4px 16px rgba(0,0,0,0.3)` : "none", transition: "box-shadow 0.15s", cursor: "default" }}
+      style={{ background: caLive ? C.surface : C.surfaceElev, borderRadius: 8, padding: "10px 12px", marginBottom: 6, borderTop: `1px solid ${C.border}`, borderRight: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, borderLeft: `3px solid ${caLive ? C.borderMid : color}`, position: "relative", boxShadow: hovered ? `0 4px 16px rgba(0,0,0,0.3)` : "none", transition: "box-shadow 0.15s", cursor: "default", opacity: caLive ? 0.45 : 1 }}
     >
-      <div style={{ fontSize: 12, fontWeight: 600, color: C.text, lineHeight: 1.4, paddingRight: hovered ? 60 : 0 }}>{item.name}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, paddingRight: hovered ? 60 : 0 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: caLive ? C.textMuted : C.text, lineHeight: 1.4, flex: 1 }}>{item.name}</div>
+        {caLive && <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: C.textMuted, background: C.surfaceHigh, borderRadius: 4, padding: "2px 5px", flexShrink: 0 }}>CA ✓</span>}
+      </div>
       <div style={{ fontSize: 10, color: C.textMuted, marginTop: 5 }}>{fmtD(item.createdAt)}</div>
       {hovered && (
         <div style={{ position: "absolute", top: 8, right: 8, display: "flex", gap: 4 }}>
@@ -367,7 +391,6 @@ function BoardTab({ items, moves, project, onAddItem, onMoveItem, onEditItem, on
   const [batchAdd,     setBatchAdd]     = useState({ open: false, text: "", parsed: [], confirmed: false });
   const [batchUpdate,  setBatchUpdate]  = useState({ open: false, text: "", parsed: [], confirmed: false });
   const [showEod,      setShowEod]      = useState(false);
-  const [caOnly,       setCaOnly]       = useState(false);
   const boardRef = useRef(null);
   const [showExec,     setShowExec]     = useState(false);
   const [showExport,   setShowExport]   = useState(false);
@@ -469,6 +492,9 @@ function BoardTab({ items, moves, project, onAddItem, onMoveItem, onEditItem, on
                     <div style={{ width: 10, height: 10, borderRadius: "50%", background: WS_COLORS[ws] ?? C.orange }} />
                     <span style={{ fontSize: 12, fontWeight: 700, color: C.text }}>{ws}</span>
                   </div>
+                  {ws === "Backlog" && (
+                    <div style={{ fontSize: 10, color: "#C0397B", marginTop: 4, fontStyle: "italic" }}>Pending Valtech deploy</div>
+                  )}
                 </th>
               ))}
             </tr>
@@ -489,6 +515,11 @@ function BoardTab({ items, moves, project, onAddItem, onMoveItem, onEditItem, on
                     return (
                       <td key={ws} style={{ verticalAlign: "top", padding: "8px 6px" }}>
                         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 10px", minHeight: 90 }}>
+                          {ws === "Backlog" && (
+                            <div style={{ fontSize: 10, color: "#C0397B", background: "rgba(192,57,123,0.07)", border: "1px solid rgba(192,57,123,0.2)", borderRadius: 6, padding: "4px 8px", marginBottom: 8, fontStyle: "italic" }}>
+                              Dependent on Valtech deploy
+                            </div>
+                          )}
                           {cellItems.length === 0 && (
                             <div style={{ fontSize: 11, color: C.textMuted, textAlign: "center", marginTop: 20 }}>—</div>
                           )}
@@ -613,52 +644,14 @@ function BoardTab({ items, moves, project, onAddItem, onMoveItem, onEditItem, on
 
       {/* ── EOD MODAL ── */}
       {(() => {
-        // Items excluded from CA-only view (US-dependent or not CA launch blockers)
-        const CA_EXCL_NAMES = [
-          "Intra-Day US",
-          "Inventory LOH-US",
-          "ATB Files US",
-          "Pre-Order Tool",
-          "Migration of HTS + COO via SF",
-          "Shipping/Stash Updates to Crowdtwist",
-          "Test Store Deactivation w/Prod Volume Inventory",
-          "Fluent Middleware Creds (US)",
-          "US Final Validation Back to Aurus",
-          "Nyco Downstream Tax Approval (US)",
-          "Hand-Off and Approval from Graham (US)",
-          "Fenix Updates",
-          "Ensure placeholder ID is replaced with correct value & Tampermonkey so scanning works properly",
-        ];
-        const CA_EXCL_WORKSTREAMS = ["$ Reporting"]; // all financial reporting tickets
-        const eodItems = caOnly
-          ? items.filter(i => {
-              if (CA_EXCL_NAMES.includes(i.name)) return false;
-              // Workstream exclusions only apply to non-complete items — completed work still counts
-              if (CA_EXCL_WORKSTREAMS.includes(i.workstream) && i.status !== "Complete") return false;
-              return true;
-            })
-          : items;
+        const eodItems = items;
         return (
           <Modal open={showEod} onClose={() => setShowEod(false)} title="End of Day Summary" width={600}>
-            {/* CA ONLY toggle */}
-            <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center" }}>
-              <button
-                onClick={() => setCaOnly(false)}
-                style={{ fontSize: 11, fontWeight: 700, padding: "5px 14px", borderRadius: 20, cursor: "pointer", border: "none", background: !caOnly ? C.orange : C.surfaceElev, color: !caOnly ? C.white : C.textSub, transition: "all 0.15s" }}>
-                ALL
-              </button>
-              <button
-                onClick={() => setCaOnly(true)}
-                style={{ fontSize: 11, fontWeight: 700, padding: "5px 14px", borderRadius: 20, cursor: "pointer", border: "none", background: caOnly ? C.teal : C.surfaceElev, color: caOnly ? C.white : C.textSub, transition: "all 0.15s" }}>
-                CA ONLY
-              </button>
-              {caOnly && <span style={{ fontSize: 10, color: C.textMuted }}>Excluding US-only items + all $ Reporting tickets</span>}
-            </div>
             <div id="eod-capture" ref={eodRef} style={{ background: NAV.bg, padding: 24, borderRadius: 10 }}>
               {/* Header */}
               <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", color: C.orange, textTransform: "uppercase", marginBottom: 2 }}>Sprint Snapshot</div>
               <div style={{ fontSize: 18, fontWeight: 800, color: NAV.text, marginBottom: 2 }}>
-                {project.name} — End of Day{caOnly ? " (CA Only)" : ""}
+                {project.name} — End of Day
               </div>
               <div style={{ fontSize: 11, color: NAV.textMuted, marginBottom: 16 }}>{new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</div>
 
@@ -715,16 +708,21 @@ function BoardTab({ items, moves, project, onAddItem, onMoveItem, onEditItem, on
                       </div>
                     </div>
                     <SegmentedBar done={done} wip={wip} total={total} height={8} />
+                    {ws === "Backlog" && (
+                      <div style={{ fontSize: 10, color: "rgba(192,57,123,0.85)", fontStyle: "italic", marginTop: 6 }}>
+                        ⚑ Items in this column are dependent on Valtech deploy
+                      </div>
+                    )}
                   </div>
                 );
               })}
-              <div style={{ display: "grid", gridTemplateColumns: caOnly ? "1fr" : "1fr 1fr", gap: 10, marginTop: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
                 <LaunchCard label="CA Launch" deployDate={project.launchCA} inStoresDate={project.launchCAInStores ?? project.launchCA} color={C.teal} />
-                {!caOnly && <LaunchCard label="US Launch" deployDate={project.launchUS} inStoresDate={project.launchUSInStores ?? project.launchUS} color={C.orange} />}
+                <LaunchCard label="US Launch" deployDate={project.launchUS} inStoresDate={project.launchUSInStores ?? project.launchUS} color={C.orange} />
               </div>
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
-              <Btn onClick={async () => { const { default: h2c } = await import("html2canvas"); const canvas = await h2c(eodRef.current, { backgroundColor: NAV.bg, scale: 2 }); const a = document.createElement("a"); a.href = canvas.toDataURL(); a.download = `eod-${caOnly ? "ca-only-" : ""}${today()}.png`; a.click(); showToast("Saved!"); }}>📸 Save Image</Btn>
+              <Btn onClick={async () => { const { default: h2c } = await import("html2canvas"); const canvas = await h2c(eodRef.current, { backgroundColor: NAV.bg, scale: 2 }); const a = document.createElement("a"); a.href = canvas.toDataURL(); a.download = `eod-${today()}.png`; a.click(); showToast("Saved!"); }}>📸 Save Image</Btn>
             </div>
           </Modal>
         );
