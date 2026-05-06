@@ -36,14 +36,14 @@ const NAV = {
   surface:  "#162840",
 };
 
-// Workstream colors — used for card left-border + legend
+// ── CONFIGURE: Workstream colors — update names and colors for your project ───
 const WS_COLORS = {
-  "Tech Team":   "#F05A22",
-  "$ Test":      "#27AE60",
-  "$ Reporting": "#2471A3",
-  "Other":       "#C0397B",
+  "Engineering": "#F05A22",  // orange
+  "QA":          "#27AE60",  // green
+  "Reporting":   "#2471A3",  // blue
+  "Other":       "#C0397B",  // pink
 };
-const WS_LEGEND = ["Tech Team", "$ Test", "$ Reporting", "Other"];
+const WS_LEGEND = ["Engineering", "QA", "Reporting", "Other"];
 
 const STATUS_META = {
   "Outstanding": { dot: "#B03025", label: "Outstanding" },
@@ -53,16 +53,18 @@ const STATUS_META = {
 
 const ALL_STATUSES = ["Outstanding", "In Progress", "Complete"];
 
-// ── DATE COLUMNS — working toward May 6 go-live ───────────────────────────────
+// ── CONFIGURE: Sprint date columns — update for your sprint window ────────────
+// Add/remove rows to match your sprint length. Format: YYYY-MM-DD.
+// isWeekend: true → shaded background. combinedIds: merge multiple days into one col.
+// badge + badgeColor: highlight key milestone days (deploy, go-live, etc.)
 const DATE_COLS = [
-  { id: "2026-04-28", label: "Tue · 4/28", isWeekend: false },
-  { id: "2026-04-29", label: "Wed · 4/29", isWeekend: false },
-  { id: "2026-04-30", label: "Thu · 4/30", isWeekend: false },
-  { id: "2026-05-01", label: "Fri · 5/1",  isWeekend: false },
-  { id: "2026-05-02", label: "Sat–Sun · 5/2–3", isWeekend: true, combinedIds: ["2026-05-02", "2026-05-03"] },
-  { id: "2026-05-04", label: "Mon · 5/4",  isWeekend: false },
-  { id: "2026-05-05", label: "Tue · 5/5",  isWeekend: false, badge: "🚀 Deploy",        badgeColor: "#F05A22" },
-  { id: "2026-05-06", label: "Wed · 5/6",  isWeekend: false, badge: "🏪 Live in Stores", badgeColor: "#2D9B6F" },
+  { id: "YYYY-MM-DD", label: "Day 1",  isWeekend: false },
+  { id: "YYYY-MM-DD", label: "Day 2",  isWeekend: false },
+  { id: "YYYY-MM-DD", label: "Day 3",  isWeekend: false },
+  { id: "YYYY-MM-DD", label: "Day 4",  isWeekend: false },
+  { id: "YYYY-MM-DD", label: "Day 5",  isWeekend: false },
+  { id: "YYYY-MM-DD", label: "Day 6",  isWeekend: false, badge: "🚀 Deploy",         badgeColor: "#F05A22" },
+  { id: "YYYY-MM-DD", label: "Day 7",  isWeekend: false, badge: "🏪 Live in Stores",  badgeColor: "#2D9B6F" },
 ];
 
 const SPECIAL_COLS = [
@@ -70,7 +72,7 @@ const SPECIAL_COLS = [
     id: "backlog-wip",
     label: "Backlog / WIP",
     color: "#C0397B",
-    note: "These are items that are in progress and we hope to bring along for our US launch, but are not blockers if not completed",
+    note: "Items in progress — targeted for this launch but not blockers if not completed",
   },
   {
     id: "not-a-blocker",
@@ -100,12 +102,9 @@ const ALL_WS = Object.keys(WS_COLORS);
 
 // ── AUTO-MIGRATION: add `col` field + normalize legacy workstream names ───────
 function migrateItem(item) {
-  // Normalize renamed/removed workstreams
+  // Normalize any renamed/removed workstreams — add remaps here if you rename workstreams mid-sprint
   let ws = item.workstream;
-  if (ws === "SSO")           ws = "Other";     // SSO renamed to Other
-  if (ws === "Aurus")         ws = "Tech Team"; // Aurus folded into Tech Team
-  if (ws === "Backlog")       ws = "Tech Team"; // old column name, not a real workstream
-  if (ws === "Not a Blocker") ws = "Other";     // old column name, not a real workstream
+  if (ws === "Not a Blocker") ws = "Other"; // old column name, not a real workstream
 
   // Assign col if missing
   let col = item.col;
@@ -320,7 +319,7 @@ function StickyCard({ item, onMove, onEdit, onDelete, compact = false }) {
 // ── DASHBOARD TAB ─────────────────────────────────────────────────────────────
 function DashboardTab({ items, moves, project }) {
   const todayId    = today();
-  const daysLeft   = daysTo("2026-05-05");
+  const daysLeft   = daysTo(project?.launchUS);
 
   // Active items (exclude Not a Blocker)
   const activeItems = items.filter(i => i.col !== "not-a-blocker" && i.col !== "pre-sprint-complete");
@@ -811,7 +810,7 @@ function BoardTab({ items, moves, project, onAddItem, onMoveItem, onEditItem, on
         <div style={{ fontSize: 12, color: C.textSub, marginBottom: 12 }}>One item per line: <code style={{ background: C.surfaceElev, padding: "2px 6px", borderRadius: 4 }}>Item Name | Workstream | Status</code> — added to Backlog / WIP</div>
         {!batchAdd.confirmed ? (
           <>
-            <Input multiline rows={8} value={batchAdd.text} onChange={v => setBatchAdd(f => ({ ...f, text: v }))} placeholder={"Fix shipping webhook | Tech Team | In Progress\nTest US orders | $ Test | Outstanding"} />
+            <Input multiline rows={8} value={batchAdd.text} onChange={v => setBatchAdd(f => ({ ...f, text: v }))} placeholder={"Fix login bug | Engineering | In Progress\nRun smoke tests | QA | Outstanding"} />
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 14 }}>
               <Btn variant="ghost" onClick={() => setBatchAdd({ open: false, text: "", parsed: [], confirmed: false })}>Cancel</Btn>
               <Btn disabled={!batchAdd.text.trim()} onClick={() => setBatchAdd(f => ({ ...f, parsed: parseBatchAdd(f.text), confirmed: true }))}>Preview</Btn>
@@ -876,7 +875,7 @@ function BoardTab({ items, moves, project, onAddItem, onMoveItem, onEditItem, on
         const todayOpen  = todayItems.filter(i => i.status !== "Complete");
         const tomorrowId = DATE_COLS[DATE_COLS.findIndex(c => c.id === todayId) + 1]?.id;
         const tomorrowItems = tomorrowId ? items.filter(i => i.col === tomorrowId) : [];
-        const daysLeft   = daysTo("2026-05-05");
+        const daysLeft   = daysTo(project?.launchUS);
 
         // Shared: workstream health bars (used in both options)
         const WSBars = () => (
@@ -944,7 +943,7 @@ function BoardTab({ items, moves, project, onAddItem, onMoveItem, onEditItem, on
               <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", color: C.orange, textTransform: "uppercase", marginBottom: 2 }}>
                 {eodView === "A" ? "Sprint Pipeline" : "Today's Rundown"}
               </div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: NAV.text, marginBottom: 2 }}>Fluent Commerce — End of Day</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: NAV.text, marginBottom: 2 }}>{project?.name ?? "Sprint"} — End of Day</div>
               <div style={{ fontSize: 11, color: NAV.textMuted, marginBottom: 16 }}>
                 {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
                 {daysLeft !== null && <span style={{ marginLeft: 12, color: C.orange, fontWeight: 700 }}>🚀 {daysLeft}d to deploy</span>}
@@ -1306,7 +1305,7 @@ function ProjectManager({ open, onClose, projects, activeId, onSwitch, onAdd, on
 // ── ROOT APP ──────────────────────────────────────────────────────────────────
 export default function App() {
   const [projects,    setProjects]    = useState([]);
-  const [activeId,    setActiveId]    = useState("fluent-commerce");
+  const [activeId,    setActiveId]    = useState("my-project");
   const [items,       setItems]       = useState([]);
   const [moves,       setMoves]       = useState([]);
   const [loaded,      setLoaded]      = useState(false);
@@ -1323,26 +1322,21 @@ export default function App() {
     fetch("/api/projects")
       .then(r => r.json())
       .then(data => {
-        const defaults = [{ id: "fluent-commerce", name: "Fluent Commerce", color: "#F05A22", launchCA: "2026-03-24", launchCAInStores: "2026-03-25", launchUS: "2026-05-05", launchUSInStores: "2026-05-06" }];
+        const defaults = [{ id: "my-project", name: "My Project", color: "#F05A22", launchCA: null, launchCAInStores: null, launchUS: null, launchUSInStores: null, workstreams: ["Engineering", "QA", "Reporting", "Other"] }];
         if (Array.isArray(data) && data.length > 0) {
-          // Update US dates if still old values
-          const updated = data.map(p => ({
-            ...p,
-            launchUS:         p.launchUS         === "2026-03-30" ? "2026-05-05" : p.launchUS,
-            launchUSInStores: p.launchUSInStores  === "2026-03-31" ? "2026-05-06" : p.launchUSInStores,
-          }));
+          const updated = data;
           setProjects(updated);
           setActiveId(updated[0].id);
         } else {
           setProjects(defaults);
-          setActiveId("fluent-commerce");
+          setActiveId("my-project");
           fetch("/api/projects", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(defaults) }).catch(() => {});
         }
       })
       .catch(() => {
-        const defaults = [{ id: "fluent-commerce", name: "Fluent Commerce", color: "#F05A22", launchCA: "2026-03-24", launchCAInStores: "2026-03-25", launchUS: "2026-05-05", launchUSInStores: "2026-05-06" }];
+        const defaults = [{ id: "my-project", name: "My Project", color: "#F05A22", launchCA: null, launchCAInStores: null, launchUS: null, launchUSInStores: null, workstreams: ["Engineering", "QA", "Reporting", "Other"] }];
         setProjects(defaults);
-        setActiveId("fluent-commerce");
+        setActiveId("my-project");
       });
   }, []);
 
